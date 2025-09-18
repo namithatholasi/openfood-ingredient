@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Usage: ./find_ingredient.sh -i "<ingredient>" -d /path/to/folder
-# Input: products.csv (TSV) must exist inside the folder.
+# Input: products.csv (TSV with columns: code, product_name, ingredients_text)
 # Output: product_name<TAB>code for matches, then a final count line.
 
 set -euo pipefail
@@ -27,23 +27,23 @@ while getopts ":i:d:h" opt; do
     esac
 done
 
-# Validate inputs
+# Validate
 [ -z "${INGREDIENT:-}" ] && { echo "ERROR: -i <ingredient> is required" >&2; usage; exit 1; }
 [ -z "${DATA_DIR:-}" ] && { echo "ERROR: -d /path/to/folder is required" >&2; usage; exit 1; }
 
 CSV="$DATA_DIR/products.csv"
 [ -s "$CSV" ] || { echo "ERROR: $CSV not found or empty." >&2; exit 1; }
 
-# Check tools
+# Check csvkit tools
 for cmd in csvcut csvgrep csvformat; do
     command -v "$cmd" >/dev/null 2>&1 || { echo "ERROR: $cmd not found. Please install csvkit." >&2; exit 1; }
 done
 
-# Pipeline for 3-column TSV: (1=code, 2=product_name, 3=ingredients_text)
+# Pipeline
 tmp_matches="$(mktemp)"
-csvcut -t -c 1,2,3 "$CSV" \
-| csvgrep -t -c 3 -r "(?i)${INGREDIENT}" \
-| csvcut -t -c 2,1 \
+csvcut -t -c code,product_name,ingredients_text "$CSV" \
+| csvgrep -t -c ingredients_text -r "(?i)${INGREDIENT}" \
+| csvcut -t -c product_name,code \
 | csvformat -T \
 | tail -n +2 \
 | tee "$tmp_matches"
