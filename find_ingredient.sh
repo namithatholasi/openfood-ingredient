@@ -27,22 +27,22 @@ while getopts ":i:d:h" opt; do
     esac
 done
 
-# Validate
+# Validate inputs
 [ -z "${INGREDIENT:-}" ] && { echo "ERROR: -i <ingredient> is required" >&2; usage; exit 1; }
 [ -z "${DATA_DIR:-}" ] && { echo "ERROR: -d /path/to/folder is required" >&2; usage; exit 1; }
 
 CSV="$DATA_DIR/products.csv"
 [ -s "$CSV" ] || { echo "ERROR: $CSV not found or empty." >&2; exit 1; }
 
-# Check csvkit tools
+# Check tools
 for cmd in csvcut csvgrep csvformat; do
     command -v "$cmd" >/dev/null 2>&1 || { echo "ERROR: $cmd not found. Please install csvkit." >&2; exit 1; }
 done
 
-# Pipeline
+# Pipeline for 3-column TSV: (1=code, 2=product_name, 3=ingredients_text)
 tmp_matches="$(mktemp)"
-csvcut -t -c 1,11,41 "$CSV" \
-| csvgrep -t -c 41 -r "(?i)${INGREDIENT}" \
+csvcut -t -c 1,2,3 "$CSV" \
+| csvgrep -t -c 3 -r "(?i)${INGREDIENT}" \
 | csvcut -t -c 2,1 \
 | csvformat -T \
 | tail -n +2 \
