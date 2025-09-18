@@ -17,6 +17,7 @@ usage() {
     echo " -h show help"
 }
 
+# Parse flags
 while getopts ":i:d:h" opt; do
     case "$opt" in
         i) INGREDIENT="$OPTARG" ;;
@@ -26,26 +27,28 @@ while getopts ":i:d:h" opt; do
     esac
 done
 
+# Validate inputs
 [ -z "${INGREDIENT:-}" ] && { echo "ERROR: -i <ingredient> is required" >&2; usage; exit 1; }
 [ -z "${DATA_DIR:-}" ] && { echo "ERROR: -d /path/to/folder is required" >&2; usage; exit 1; }
 
 CSV="$DATA_DIR/products.csv"
 [ -s "$CSV" ] || { echo "ERROR: $CSV not found or empty." >&2; exit 1; }
 
+# Check required tools
 for cmd in csvcut csvgrep csvformat; do
     command -v "$cmd" >/dev/null 2>&1 || { echo "ERROR: $cmd not found. Please install csvkit." >&2; exit 1; }
 done
 
+# Pipeline (always assume exactly these 3 columns)
 tmp_matches="$(mktemp)"
-
-# Use column numbers (1=code, 11=product_name, 41=ingredients_text)
-csvcut -t -c 41,11,1 "$CSV" \
-| csvgrep -t -c 1 -r "(?i)${INGREDIENT}" \
-| csvcut -t -c 2,3 \
+csvcut -t -c code,product_name,ingredients_text "$CSV" \
+| csvgrep -t -c ingredients_text -r "(?i)${INGREDIENT}" \
+| csvcut -t -c product_name,code \
 | csvformat -T \
 | tail -n +2 \
 | tee "$tmp_matches"
 
+# Summary
 count="$(wc -l < "$tmp_matches" | tr -d ' ')"
 echo "----"
 echo "Found ${count} product(s) containing: \"${INGREDIENT}\""
