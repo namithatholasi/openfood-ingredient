@@ -39,18 +39,20 @@ for cmd in csvcut csvgrep csvformat; do
     command -v "$cmd" >/dev/null 2>&1 || { echo "ERROR: $cmd not found. Please install csvkit." >&2; exit 1; }
 done
 
-# Pipeline: keep CSV internally; convert to TSV at the end
+# Pipeline: TSV-aware (-t everywhere)
 tmp_matches="$(mktemp)"
 csvcut -t -c ingredients_text,product_name,code "$CSV" \
-| csvgrep -c ingredients_text -r "(?i)${INGREDIENT}" \
-| csvcut -c product_name,code \
+| csvgrep -t -c ingredients_text -r "(?i)${INGREDIENT}" \
+| csvcut -t -c product_name,code \
 | csvformat -T \
 | tail -n +2 \
 | tee "$tmp_matches"
 
+# Summary
 count="$(wc -l < "$tmp_matches" | tr -d ' ')"
 echo "----"
 echo "Found ${count} product(s) containing: \"${INGREDIENT}\""
 
+# Cleanup
 rm -f "$tmp_matches"
 
