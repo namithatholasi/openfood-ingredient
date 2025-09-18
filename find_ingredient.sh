@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Usage: ./find_ingredient.sh -i "<ingredient>" -d /path/to/folder
-# Input: products.csv (comma-separated) must exist inside the folder.
+# Input: products.csv (TSV) must exist inside the folder.
 # Output: product_name<TAB>code for matches, then a final count line.
 
 set -euo pipefail
@@ -13,7 +13,7 @@ CSV=""
 usage() {
     echo "Usage: $0 -i \"<ingredient>\" -d /path/to/folder"
     echo " -i ingredient to search (case-insensitive)"
-    echo " -d folder containing products.csv (comma-separated)"
+    echo " -d folder containing products.csv (tab-separated)"
     echo " -h show help"
 }
 
@@ -39,18 +39,20 @@ for cmd in csvcut csvgrep csvformat; do
     command -v "$cmd" >/dev/null 2>&1 || { echo "ERROR: $cmd not found. Please install csvkit." >&2; exit 1; }
 done
 
-# Pipeline: now assume CSV (comma-separated, no -t)
+# Pipeline (TSV-aware with -t)
 tmp_matches="$(mktemp)"
-csvcut -c code,product_name,ingredients_text "$CSV" \
-| csvgrep -c ingredients_text -r "(?i)${INGREDIENT}" \
-| csvcut -c product_name,code \
+csvcut -t -c code,product_name,ingredients_text "$CSV" \
+| csvgrep -t -c ingredients_text -r "(?i)${INGREDIENT}" \
+| csvcut -t -c product_name,code \
 | csvformat -T \
 | tail -n +2 \
 | tee "$tmp_matches"
 
+# Summary
 count="$(wc -l < "$tmp_matches" | tr -d ' ')"
 echo "----"
 echo "Found ${count} product(s) containing: \"${INGREDIENT}\""
 
+# Cleanup
 rm -f "$tmp_matches"
 
