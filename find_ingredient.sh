@@ -39,7 +39,7 @@ for cmd in csvcut csvgrep csvformat; do
     command -v "$cmd" >/dev/null 2>&1 || { echo "ERROR: $cmd not found. Please install csvkit." >&2; exit 1; }
 done
 
-# Pipeline: TSV-aware (-t everywhere)
+# Pipeline
 tmp_matches="$(mktemp)"
 csvcut -t -c ingredients_text,product_name,code "$CSV" \
 | csvgrep -t -c ingredients_text -r "(?i)${INGREDIENT}" \
