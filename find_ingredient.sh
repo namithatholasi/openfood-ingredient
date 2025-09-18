@@ -41,9 +41,9 @@ done
 
 # Pipeline
 tmp_matches="$(mktemp)"
-csvcut -t -c ingredients_text product_name code "$CSV" \
+csvcut -t -c "ingredients_text,product_name,code" "$CSV" \
 | csvgrep -t -c ingredients_text -r "(?i)${INGREDIENT}" \
-| csvcut -t -c product_name code \
+| csvcut -t -c "product_name,code" \
 | csvformat -T \
 | tail -n +2 \
 | awk -F '\t' '{name=$1?$1:"<no name>"; code=$2?$2:"<no code>"; print name "\t" code}' \
